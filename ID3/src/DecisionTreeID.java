@@ -9,7 +9,8 @@ import java.util.TreeSet;
 
 
 public class DecisionTreeID {
-
+	
+	private static int numCol = 0;
 	public DecisionTreeID() {
 
 	}
@@ -65,9 +66,9 @@ public class DecisionTreeID {
 			}			
 		} 
 		//Al leer el fichero, no me queda otra que leer por filas, por eso cambio mi estructura a un array de columnas para facilitarme la vida.
-		int numCol = filas.get(0).size();
+		int size = filas.get(0).size();
 		List<ArrayList<String>> datos = new ArrayList<ArrayList<String>>();
-		for (int i = 0; i < numCol; i++) {			
+		for (int i = 0; i < size; i++) {			
 			ArrayList<String> col = new ArrayList<>();
 			for (ArrayList<String> list : filas) {
 				col.add(list.get(i)); //columna				
@@ -85,7 +86,7 @@ public class DecisionTreeID {
 		 */
 		
 		//1.- Cuento el numero de elementos según los valores clasificadores. (eg {Sí = sv{1}, No = sv{2}})
-		int numCol = datos.size();
+		//int numCol = datos.size();
 		ArrayList<Double> sv = new ArrayList<>();		
 		for(String c : set_clasif) {
 			double num = 0.0;
@@ -141,7 +142,7 @@ public class DecisionTreeID {
 		//2. Itero sobre col_values para calcular las entropias para calcular la ganancia (eg. E(Alta|{si,no}))
 		ArrayList<Double> entropias = new ArrayList<>(); //Lista donde guardo las entropias
 		double e = 0.0; //Variable auxiliar que uso para guardar la entropia momentaneamente para calcular la ganancia dinamicamente.
-		double numCol = col.size();
+		double size = col.size();
 		double g = 0.0; //Variable donde calculo la ganacia dinamicamente.
 		for (String value : col_values) { //{Alta, Media, Baja}
 			double s = 0.0; 
@@ -151,7 +152,7 @@ public class DecisionTreeID {
 			}
 			e = entropy(set_clasif, col, value, colClasif, s);
 			entropias.add(e); //Guardo las entropias, borrar luego pq no lo necesito **********
-			g += (s/numCol)*e;
+			g += (s/size)*e;
 		}
 		//3. Completo el calculo de la ganancia.
 		g = e_s - g;
@@ -192,7 +193,7 @@ public class DecisionTreeID {
 		}	
 		
 		//1.- Determino el conjunto de elementos sobre los que clasifico (eg. {si,no})
-		int numCol = datos.size();
+		numCol = datos.size();
 		Set<String> set_clasif = getSetClasif(datos.get(numCol-1));
 		//2.- Calculo la entropia general E(S)
 		double e_s = calculateGeneralEntropy(datos, set_clasif);
@@ -200,9 +201,11 @@ public class DecisionTreeID {
 		ArrayList<Double> ganancias = new ArrayList<>();
 		double g = 0.0;
 		for (ArrayList<String> col : datos) {
-			g = ganancia(col, datos.get(numCol-1),  set_clasif, e_s);
-			if(g != e_s)
+			if(!col.equals(datos.get(numCol-1))) {
+				g = ganancia(col, datos.get(numCol-1),  set_clasif, e_s);
 				ganancias.add(g);
+			}
+				
 		}
 		
 		//Muestro atributos y debajo la ganacia de cada atributo.
