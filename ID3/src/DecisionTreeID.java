@@ -7,12 +7,22 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeSet;
 
+import javax.naming.directory.AttributeModificationException;
+
 
 public class DecisionTreeID {
 	
 	private static int numCol = 0;
+	private static int numFilas = 0; //num filas totales
+	
+	public static ArrayList <String> atributos;//Lista de atributos
+	public static List<ArrayList<String>> datos;//tabla de todos los datos
+	public static double entropia_general;//entropia general
+	public static Set<String> set_clasif;//cjto de datos sobre los que se clasifica.
+	
+	
 	public DecisionTreeID() {
-
+		
 	}
 	
 	private static ArrayList<String> atributos (File f) throws FileNotFoundException{
@@ -105,8 +115,7 @@ public class DecisionTreeID {
 	}
 	
 	private static double entropy (Set<String> set_clasif, ArrayList<String> col, String value, ArrayList<String> colClasif, double s) {
-		/* colClasif  -> columna sobre la cual se calculan las entropias, en este caso la ultima. (eg. Administrar Farmaco F)
-		 * set_clasif -> conjunto que contiene los elementos sobre los que se calcula la entropia.(eg. {Si, no})
+		/* set_clasif -> conjunto que contiene los elementos sobre los que se calcula la entropia.(eg. {Si, no})
 		 * value      -> elemento sobre el que calculo la entropia. (eg. Alta, Baja, Media)
 		 * colClasif  -> columna sobre la cual se calculan las entropias, en este caso la ultima. (eg. Administrar Farmaco F)
 		 * s          -> numero de elementos sobre el que calculo la entropia. (eg. Alta = 6)
@@ -171,7 +180,129 @@ public class DecisionTreeID {
 		}
 		return values;
 	}
+	
+/*---------------------MARTA------------------------------------------------*/
+	/*devuelve la columna de valores que se están teniendo en cuenta segun las filas activas en cada momento
+	 * i -> indice de la columna
+	 * filas -> filas activas*/
+	private static ArrayList<String> columnaActual(int i, Boolean[] filas){
+		ArrayList<String> colAct = datos.get(i);
+		
+		//recorremos filas, el array de bool
+		for(int f = 0; f<numFilas; f++){
+			if(!filas[i]) colAct.remove(f);
+		}
+		return colAct;
+	}
+	
+	/*Devuelve el índice del atributo de máxima ganancia para un cjto de filas y columnas dado*/
+	private static int atrMaxGanancia (Boolean[] filas, Boolean[] columnas){
+		double maxg,g;
+		int atributo;		
+		atributo = 0;
+		maxg = 0;
+		
+		ArrayList<String>colActual; //columnaActual, las filas para calcular la ganancia.
+		//recorremos todas las columnas excepto la última, que es sobre la cual se clasifica
+		for(int col= 0; col<numCol-1; col++){
+			if(columnas[col]){
+				colActual = columnaActual(col,filas);
+				g = ganancia(colActual, datos.get(numCol-1), set_clasif, entropia_general);
+				if(g>maxg){
+					maxg = g;
+					atributo= col;
+				}
+				
+			}
+		}
+		
+		return atributo;
+	}
+	//resultado tras eliminar las filas que no tienen el valor del atributo actual igual al valor de la rama
+	public static Boolean[] eliminarFilas (Boolean [] filas, String valor, int atributo){
+		for(int f = 0; f<numFilas; f++){
+			if(datos.get(atributo).get(f)!= valor) filas[f]=false;
+		}
+		return filas;
+	}
+	//indica cuando clasificar: cuando para las filas actuales sólo hay uno de los valores a clasificar
+	public boolean clasificar(Boolean[]filas,Boolean[]columnas){
+		int c=0;
+		boolean clasificar = false;
+		ArrayList<String> colActual = columnaActual(numCol-1, filas);
+		Set<String> cjto_clasif = getSetClasif(colActual);
+		if(cjto_clasif.size()==1)clasificar = true;
+		
+		/*La segunda condición para comprobar si hay que clasificar antes de escoger el atributo
+		 * de máxima ganancia es ver si ya no quedan más atributos para añadir nuevos nodos.
+		 */
+		if(!clasificar){
+			//recorremos el array de bool de columnas excepto la última para ver si hay columnas sin explorar, es decir a true
+			while(!clasificar && c<numCol){
+				if(columnas[c])clasificar = true;
+			}
+		}
+		return clasificar;
+	}
+	//Devuelve el nombre que se tiene que dar al nodo hoja
+	public String valorNodoHoja(Boolean[]filas){
+		String nombreHoja="";
+		boolean noNombre= true;
+		int f = 0;
+			while(noNombre){
+				if(filas[f]){
+					noNombre = false;
+					nombreHoja = datos.get(numCol-1).get(f);
+				}
+				f++;
+			}
+		return nombreHoja;
+	}
+	public static String ID3 (Boolean [] filas,Boolean [] columnas,String nodo){
+		/*filas-> array de bool de las filas que están "activas" en cada momento
+		 * columnas -> array de bool de las columnas "activas"
+		 * nodo -> nodo que se instancia en cada momento. En un primer lugar es el nodo raíz que se pasa como nulo
+		 * lo he puesto como un string de forma provisional*/
+		
+		ArrayList<String>columnaActual;
+		Boolean [] filas2;
+		Boolean [] columnas2;		 
+		
+		//if (nodo != null && clasificar(filas)) nodo hoja;
+		//else{
+		
+			int atributo = atrMaxGanancia(filas,columnas);//se calcula el atributo de máxima ganancia.
+			
+			if (nodo == null) nodo=atributos.get(atributo);//Contenido del if provisional, lo que se hace es crear nodo
+			else nodo = atributos.get(atributo);//también provisional, se instancia el de maxima ganancia
+			
+			columnaActual = columnaActual(atributo,filas);
+			Set<String>valores_atributo = getSetClasif(columnaActual);//conseguir las ramas que tendrá el nodo
+			
+			if(valores_atributo.size()!=1){
+			//Para cada rama, se añade un nodo hijo
+				for(String v: valores_atributo){
+					columnas2 = columnas;
+					filas2 = filas;
+					columnas2 [atributo]=false;
+					filas2 = eliminarFilas(filas2,v,atributo);
+					
+					String nodo2="";//crear nuevo nodo que será el hijo,que no es nulo,aun no se sabe si será hoja o no (nodo2)
+					nodo2 = ID3(filas2,columnas2,nodo2);
+					//añadir el nodo hijo (nodo2) al nodo (nodo) en la rama de nombre "v"
+				}
+			}else{//cuando el atributo de máxima ganancia tiene sólo una rama, se clasifica.
+				//añadir rama con el valor del conjunto de valores(un sólo elemento en este caso)
+				//añadir nodo hoja (funcion nombreHoja)
+				
+			}
+		
+		//}
+			return nodo;
+	}
 
+	
+//------------------------------------Hasta aquí funciones creadas por Marta--------------------------------------------------------------------	
 	public static void learnDT(String ficheroCSV) throws Exception { //Entrenar
 		/*
 		 * Crea el árbol de decisión a partir del dataset contenido en el 
@@ -181,8 +312,8 @@ public class DecisionTreeID {
 		
 		File f = new File(ficheroCSV); //Abrir dataset
 
-		ArrayList<String> atributos = atributos(f);
-		List<ArrayList<String>> datos = tablaDatos(f);
+		atributos = atributos(f);
+		datos = tablaDatos(f);
 		
 		System.out.println("Nuestra tabla de datos: ");	
 		//Primera fila despreciable, por ello, la elimino
@@ -194,7 +325,22 @@ public class DecisionTreeID {
 		
 		//1.- Determino el conjunto de elementos sobre los que clasifico (eg. {si,no})
 		numCol = datos.size();
-		Set<String> set_clasif = getSetClasif(datos.get(numCol-1));
+		
+		//Añadido -------------------------
+		numFilas = datos.get(0).size();
+		set_clasif = getSetClasif(datos.get(numCol-1));
+		
+		//MARTA: INICIALIZAR ARRAYS DE BOOLEAN FILAS Y COLUMNAS;---------
+		Boolean [] columnas= new Boolean[numCol];
+		Boolean [] filas = new Boolean[numFilas];
+		
+		for (int i = 0; i<numCol; i++){
+			columnas[i]=true;
+		}
+		for(int i=0; i<numFilas; i++){
+			filas[i]=true;
+		}
+		//----------------------
 		//2.- Calculo la entropia general E(S)
 		double e_s = calculateGeneralEntropy(datos, set_clasif);
 		//3.- Calculo ganancias
@@ -207,11 +353,20 @@ public class DecisionTreeID {
 			}
 				
 		}
+		//-----------------
+		entropia_general = e_s;
+		int atributo = atrMaxGanancia(filas,columnas);
+
+		
+		//----------------
 		
 		//Muestro atributos y debajo la ganacia de cada atributo.
 		System.out.println();
 		System.out.println(atributos);
 		System.out.println(ganancias);
+		//-----------comprobaciones
+		System.out.println(atributo+"--> "+ atributos.get(atributo));
+		//----------- cuando esté lista la estructura del arbol se llama a la función ID3
 		
 		/*
 		 * De ahora en adelante toca el algoritmo ID3.
@@ -223,6 +378,7 @@ public class DecisionTreeID {
 		 * Until here, if there is any question, ask Iman.
 		 */
 	}
+	
 
 	public void drawDecisionTree() { //Mostrar
 		/*
