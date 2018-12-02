@@ -19,13 +19,14 @@ public class DecisionTreeID {
 	public static List<ArrayList<String>> datos;//tabla de todos los datos
 	public static double entropia_general;//entropia general
 	public static Set<String> set_clasif;//cjto de datos sobre los que se clasifica.
+	public static String nombreNodoAnterior = ""; //Aqui sí es un string que guarda el nombre del nodo anterior y no un nodo en sí mismo
 	
 	
 	public DecisionTreeID() {
 		
 	}
 	
-	private static ArrayList<String> atributos (File f) throws FileNotFoundException{
+	private  ArrayList<String> atributos (File f) throws FileNotFoundException{
 		/*
 		 * Como la primera línea del fichero solo tiene valor semántico, la guardo aparte.
 		 * f -> fichero de entrada csv.
@@ -47,7 +48,7 @@ public class DecisionTreeID {
 		}
 		return atributos;
 	}
-	private static List<ArrayList<String>> tablaDatos (File f) throws FileNotFoundException{
+	private  List<ArrayList<String>> tablaDatos (File f) throws FileNotFoundException{
 		/*
 		 * f -> fichero csv de entrada, el cual tiene la tabla de datos que se utilizara para hacer el algoritmo ID3.
 		 * Leo el fichero y devuelvo una lista de listas(columnas de la tabla)
@@ -89,7 +90,7 @@ public class DecisionTreeID {
 		return datos;
 	}
 	
-	private static double calculateGeneralEntropy(List<ArrayList<String>> datos, Set<String> set_clasif) { //hacer bonito
+	private  double calculateGeneralEntropy(List<ArrayList<String>> datos, Set<String> set_clasif) { //hacer bonito
 		/*
 		 * datos -> Lista de columnas, cojo la última columna y calculo la entropía general
 		 * set_clasif -> conjunto que contiene los elementos sobre los que se calcula la entropia.(eg. {Si, no})
@@ -114,7 +115,7 @@ public class DecisionTreeID {
 		return e;
 	}
 	
-	private static double entropy (Set<String> set_clasif, ArrayList<String> col, String value, ArrayList<String> colClasif, double s) {
+	private  double entropy (Set<String> set_clasif, ArrayList<String> col, String value, ArrayList<String> colClasif, double s) {
 		/* set_clasif -> conjunto que contiene los elementos sobre los que se calcula la entropia.(eg. {Si, no})
 		 * value      -> elemento sobre el que calculo la entropia. (eg. Alta, Baja, Media)
 		 * colClasif  -> columna sobre la cual se calculan las entropias, en este caso la ultima. (eg. Administrar Farmaco F)
@@ -138,7 +139,7 @@ public class DecisionTreeID {
 		return e;
 	}
 	
-	private static double ganancia(ArrayList<String> col, ArrayList<String> colClasif,Set<String> set_clasif, double e_s) {
+	private  double ganancia(ArrayList<String> col, ArrayList<String> colClasif,Set<String> set_clasif, double e_s) {
 		/*
 		 * col        -> columna de la cual calculo la ganancia. (eg. Presion Alta)
 		 * colClasif  -> columna sobre la cual se calculan las entropias, en este caso la ultima. (eg. Administrar Farmaco F)
@@ -169,7 +170,7 @@ public class DecisionTreeID {
 		return g;		
 	}
 	
-	private static Set <String> getSetClasif(ArrayList<String> columna) {
+	private  Set <String> getSetClasif(ArrayList<String> columna) {
 		/*
 		 * columna -> columna de la cual quiero calcular la entropía. (eg. Presión Arterial o Colesterol)
 		 * returns => los elementos que necesito para calcular la entropía. (eg. {Alta, Media, Baja})
@@ -185,29 +186,36 @@ public class DecisionTreeID {
 	/*devuelve la columna de valores que se están teniendo en cuenta segun las filas activas en cada momento
 	 * i -> indice de la columna
 	 * filas -> filas activas*/
-	private static ArrayList<String> columnaActual(int i, Boolean[] filas){
-		ArrayList<String> colAct = datos.get(i);
+	private  ArrayList<String> columnaActual(int i, Boolean[] filas){
+		ArrayList<String> colAct = new ArrayList<String>();
 		
 		//recorremos filas, el array de bool
 		for(int f = 0; f<numFilas; f++){
-			if(!filas[i]) colAct.remove(f);
+			if(filas[f]) colAct.add(datos.get(i).get(f));
 		}
+
 		return colAct;
 	}
 	
 	/*Devuelve el índice del atributo de máxima ganancia para un cjto de filas y columnas dado*/
-	private static int atrMaxGanancia (Boolean[] filas, Boolean[] columnas){
+	private  int atrMaxGanancia (Boolean[] filas, Boolean[] columnas){
 		double maxg,g;
 		int atributo;		
 		atributo = 0;
-		maxg = 0;
+		maxg = -1;
 		
-		ArrayList<String>colActual; //columnaActual, las filas para calcular la ganancia.
+		ArrayList<String>colActual, colActualdeClasificacion; //columnaActual, las filas para calcular la ganancia.
+		colActualdeClasificacion = columnaActual(numCol-1,filas); //reducimos la columna de clasificación a las filas actuales
+		
+		//System.out.println("Columna actual de clasificacion: "+colActualdeClasificacion.toString());//para comprobar(borrable)
+		
 		//recorremos todas las columnas excepto la última, que es sobre la cual se clasifica
 		for(int col= 0; col<numCol-1; col++){
 			if(columnas[col]){
 				colActual = columnaActual(col,filas);
-				g = ganancia(colActual, datos.get(numCol-1), set_clasif, entropia_general);
+				//System.out.println("Atributo "+atributos.get(col)+" "+colActual.toString());//comprobar
+				g = ganancia(colActual, colActualdeClasificacion, set_clasif, entropia_general);
+				//System.out.println(" Ganancia "+atributos.get(col)+" es "+g);//comprobar
 				if(g>maxg){
 					maxg = g;
 					atributo= col;
@@ -219,18 +227,26 @@ public class DecisionTreeID {
 		return atributo;
 	}
 	//resultado tras eliminar las filas que no tienen el valor del atributo actual igual al valor de la rama
-	public static Boolean[] eliminarFilas (Boolean [] filas, String valor, int atributo){
+	private  Boolean[] eliminarFilas (Boolean [] filas, String valor, int atributo){
+		
 		for(int f = 0; f<numFilas; f++){
-			if(datos.get(atributo).get(f)!= valor) filas[f]=false;
+			if(!datos.get(atributo).get(f).equals(valor)){
+				filas[f]=false;
+			}
+			
 		}
 		return filas;
 	}
-	//indica cuando clasificar: cuando para las filas actuales sólo hay uno de los valores a clasificar
-	public boolean clasificar(Boolean[]filas,Boolean[]columnas){
+	/*indica cuando clasificar: 
+	 * 1-cuando para las filas actuales sólo hay uno de los valores a clasificar
+	 */
+	private  boolean clasificar(Boolean[]filas,Boolean[]columnas){
 		int c=0;
 		boolean clasificar = false;
+		boolean recorrer = true;//para recorrer el array de columnas
 		ArrayList<String> colActual = columnaActual(numCol-1, filas);
 		Set<String> cjto_clasif = getSetClasif(colActual);
+		
 		if(cjto_clasif.size()==1)clasificar = true;
 		
 		/*La segunda condición para comprobar si hay que clasificar antes de escoger el atributo
@@ -238,72 +254,111 @@ public class DecisionTreeID {
 		 */
 		if(!clasificar){
 			//recorremos el array de bool de columnas excepto la última para ver si hay columnas sin explorar, es decir a true
-			while(!clasificar && c<numCol){
-				if(columnas[c])clasificar = true;
+			while(recorrer&&c<numCol-1){
+				if(columnas[c]){
+					recorrer=false;//cuando se encuentra una columna no clasificada 
+				}
+				c++;
 			}
+			if(recorrer)clasificar = true;
 		}
 		return clasificar;
 	}
 	//Devuelve el nombre que se tiene que dar al nodo hoja
-	public String valorNodoHoja(Boolean[]filas){
-		String nombreHoja="";
-		boolean noNombre= true;
+	private  String valorNodoHoja(Boolean[]filas, String nodoAnterior){
+		String nombreHoja=nodoAnterior;
+		
 		int f = 0;
-			while(noNombre){
-				if(filas[f]){
-					noNombre = false;
-					nombreHoja = datos.get(numCol-1).get(f);
-				}
+		/*mientras que el nombre del nodo anterior igual que la hoja anterior, ya sea vacía o no vacía se busca un nombre distinto
+		 * el motivo por el que se busca un nodo de nombre distinto al nombre del nodo anterior es por ejemplo el caso en el que en el nodo X tiene una
+		 * rama izda con hoja igual a "Y" y en la rama derecha de X el siguiente atributo de máxima ganancia sólo tiene una rama que directamente
+		 * se clasifica y puede hacerlo como "Y" o como otros "valores hoja" "Z","J" . 
+		 * Ejemplo Simpsons: cuando en la expansión por la rama izda se llega al nodo interno "peso", éste por la izda el siguiente nodo
+		 * es hoja (de valor "H"), al continuar por la rama derecha de "peso", el siguiente (y último atributo que queda por explorar)
+		 * es "edad", que en este caso sólo tiene una rama por la que seguir, por lo que este nodo interno "edad" no se pone
+		 * y se clasifica directamente, como la clasificación puede ser "H" o "M", escogemos "M", de otra manera si se pone "H"
+		 * habría que suprimir el nodo interno "peso" y sustituirlo por un nodo hoja.
+		 */
+			while(nodoAnterior.equals(nombreHoja)&&f<numFilas){
+				if(filas[f])nombreHoja = datos.get(numCol-1).get(f);
+				
 				f++;
 			}
+			
 		return nombreHoja;
 	}
-	public static String ID3 (Boolean [] filas,Boolean [] columnas,String nodo){
+	private String ID3 (Boolean [] filas,Boolean [] columnas,String nodo){
 		/*filas-> array de bool de las filas que están "activas" en cada momento
 		 * columnas -> array de bool de las columnas "activas"
 		 * nodo -> nodo que se instancia en cada momento. En un primer lugar es el nodo raíz que se pasa como nulo
 		 * lo he puesto como un string de forma provisional*/
 		
 		ArrayList<String>columnaActual;
-		Boolean [] filas2;
-		Boolean [] columnas2;		 
-		
-		//if (nodo != null && clasificar(filas)) nodo hoja;
-		//else{
-		
+		Boolean [] filas2 = new Boolean[numFilas];
+		Boolean [] columnas2 = new Boolean[numCol];		 
+		//Caso base, poner un nodo hoja
+		if (nodo != null && clasificar(filas,columnas)){
+			nodo=valorNodoHoja(filas, nodo);
+			System.out.println("Nodo hoja:"+nodo);
+		}
+		else{
+			
 			int atributo = atrMaxGanancia(filas,columnas);//se calcula el atributo de máxima ganancia.
 			
-			if (nodo == null) nodo=atributos.get(atributo);//Contenido del if provisional, lo que se hace es crear nodo
-			else nodo = atributos.get(atributo);//también provisional, se instancia el de maxima ganancia
-			
-			columnaActual = columnaActual(atributo,filas);
-			Set<String>valores_atributo = getSetClasif(columnaActual);//conseguir las ramas que tendrá el nodo
-			
-			if(valores_atributo.size()!=1){
-			//Para cada rama, se añade un nodo hijo
-				for(String v: valores_atributo){
-					columnas2 = columnas;
-					filas2 = filas;
-					columnas2 [atributo]=false;
-					filas2 = eliminarFilas(filas2,v,atributo);
-					
-					String nodo2="";//crear nuevo nodo que será el hijo,que no es nulo,aun no se sabe si será hoja o no (nodo2)
-					nodo2 = ID3(filas2,columnas2,nodo2);
-					//añadir el nodo hijo (nodo2) al nodo (nodo) en la rama de nombre "v"
-				}
-			}else{//cuando el atributo de máxima ganancia tiene sólo una rama, se clasifica.
-				//añadir rama con el valor del conjunto de valores(un sólo elemento en este caso)
-				//añadir nodo hoja (funcion nombreHoja)
+			System.out.println("\n \n Max g->"+atributos.get(atributo));//imprimir atributo max ganancia
+			if (nodo == null){
+				nodo=atributos.get(atributo);//Contenido del if provisional, lo que se hace es crear nodo
+				System.out.println("Raiz "+nodo);//Imprimir nombre del nodo
 				
 			}
+			else {
+				nodo = atributos.get(atributo);//también provisional, se instancia el de maxima ganancia
+				System.out.println(nodo);//imprimir nombre del nodo
+			}
+			columnaActual = columnaActual(atributo,filas);
+			//System.out.println("Columna act "+columnaActual.toString());//Comprobar valores de la columna que se está utilizando
+			Set<String>valores_atributo = getSetClasif(columnaActual);//conseguir las ramas que tendrá el nodo
+			
+			//Si valores_atributo > 1 significa que hay más de una rama, sino, es posible clasificar
+			if(valores_atributo.size()>1){
+				//guardar el valor de filas y columnas para la vuelta atrás
+				System.arraycopy(columnas, 0, columnas2, 0,columnas.length);
+				System.arraycopy(filas, 0, filas2, 0,filas.length);
+				
+			//Para cada rama(v nombre de la rama), se añade un nodo hijo
+				for(String v: valores_atributo){
+					columnas2 [atributo]=false;//eliminar la columna del atributo de máx ganancia puesto
+					filas2 = eliminarFilas(filas2,v,atributo);//eliminar las filas que no tienen valor v (que no pertenecen a la rama)
+										
+					String nodo2="";//crear nuevo nodo que será el hijo,que no es nulo,aun no se sabe si será hoja o no (nodo2)
+					//añadir el nodo hijo (nodo2) al nodo (nodo) en la rama de nombre "v"
+					System.out.println(atributos.get(atributo)+" -> Rama "+v);
+					nodo2 = ID3(filas2,columnas2,nodo2);
+					nombreNodoAnterior =nodo2;/*Se guarda el nombre del nodo anterior*/
+					
+					System.out.println("Vuelta atrás");
+					//System.out.println("Nodo ANTERIOR:"+nodo2);//(para comprobaciones)
+					//columnaActual = columnaActual(atributo,filas);//para comprobaciones
+					//System.out.println("Columna al hacer backtrack "+columnaActual.toString());//comprobaciones
+					
+					//se recuperan los valores de filas y columnas al volver atrás
+					columnas2 = columnas;
+					filas2 = filas;
+					
+				}
+			}else{
+				//Si sólo hay una rama se clasifica
+				System.out.println("Clasificar directamente, nodo hoja->"+valorNodoHoja(filas,nombreNodoAnterior));
+			}
 		
-		//}
+		}
+			//System.out.println("Salir");//Comprobar que sale y vuelve atrás
 			return nodo;
 	}
 
 	
 //------------------------------------Hasta aquí funciones creadas por Marta--------------------------------------------------------------------	
-	public static void learnDT(String ficheroCSV) throws Exception { //Entrenar
+	public void learnDT(String ficheroCSV) throws Exception { //Entrenar
 		/*
 		 * Crea el árbol de decisión a partir del dataset contenido en el 
 		 * fichero cuyo nombre se le pasa como argumento. 
@@ -364,10 +419,13 @@ public class DecisionTreeID {
 		System.out.println();
 		System.out.println(atributos);
 		System.out.println(ganancias);
+		
 		//-----------comprobaciones
 		System.out.println(atributo+"--> "+ atributos.get(atributo));
 		//----------- cuando esté lista la estructura del arbol se llama a la función ID3
-		
+		String nodo=null;//EL Objeto nodo inicial es nulo
+		nodo= ID3(filas, columnas, nodo);
+		System.out.println("NODO RAIZ"+nodo);
 		/*
 		 * De ahora en adelante toca el algoritmo ID3.
 		 * Coger de "ganancias" el valor más grande y asociarlo al atributo.
@@ -391,7 +449,7 @@ public class DecisionTreeID {
 		 * devuelve la clase a la que pertenece el registro que queremos predecir. El registro y el fichero tienen que
 		 * tener las variables en el mismo orden. 
 		 */
-
+	
 
 		return registroCVS;
 
@@ -401,7 +459,9 @@ public class DecisionTreeID {
 	public static void main(String[] args) throws Exception {
 		String filename = "datosTabla.csv";
 		try {
-			learnDT(filename);
+			DecisionTreeID dt = new DecisionTreeID();
+			dt.learnDT(filename);
+			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
