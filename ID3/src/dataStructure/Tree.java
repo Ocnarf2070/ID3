@@ -6,68 +6,73 @@ import java.util.List;
 
 public class Tree {
 	private static class Node {
-		String nombre;
-		List<Node> ramas;
-		List<String> etiqueta;
-		public Node(String nombre) {
-			this.nombre=nombre;
-			ramas = new ArrayList<>();
-			etiqueta = new ArrayList<>();
-		}
-		public void add(Node hijo, String etiqueta) {
-			ramas.add(hijo);
-			this.etiqueta.add(etiqueta);
+		String name;
+		boolean leaf;
+		List<Node> branches;
+		List<String> tags;
+		public Node(String name, boolean leaf, List<String> tags) {
+			this.name=name;
+			this.leaf=leaf;
+			this.tags = tags;
+			branches = new ArrayList<>();
+			if(!leaf)
+			for(int i=0;i<tags.size();i++) {
+				branches.add(null);
+			}
 		}
 		
 		@Override
 		public String toString() {
 			// TODO Auto-generated method stub
-			return nombre+"<"+etiqueta+">";
+			return name+" "+tags;
 		}
 		
 	}
-	
-	private Node raiz;
-	
-	public Tree(String nombre) {
-		raiz=new Node(nombre);
-	}	
-	
-	public void add(String padre, String nombre, String etiqueta) throws Exception {
-		if(search(nombre)!=null) throw new Exception("Ya existe el nodo");
-		Node nodo = new Node(nombre);
-		Node father = search(padre);
-		if(father==null) throw new Exception("No existe el padre");
-		father.add(nodo, etiqueta);
+
+	private Node root;
+
+	public Tree() {
+		root = null;
+	}
+	public boolean isEmpty(){
+		return root==null;
 	}
 
-	public Node search(String nombre) {
-		return searchRec(raiz,nombre);
+	public void add(String name, List<String> types) throws Exception {
+		root = addRec(name,false, types, root);
+		inserted=false;
 	}
-
-	private Node searchRec(Node arbol, String nombre) {
-		if(arbol.nombre.equals(nombre))return arbol;
-		else {
-			Node aux=null;
-			Iterator<Node> ramas = arbol.ramas.iterator();
-			while(ramas.hasNext()&&aux==null) {
-				aux=searchRec(ramas.next(),nombre);
-			}
-			return aux;
+	public void add(String name) throws Exception {
+		root = addRec(name,true, null, root);
+		inserted=false;
+	}
+	boolean inserted;
+	private Node addRec(String name, boolean isRoot, List<String> types, Node node) {
+		if(node == null) {
+			inserted=true;
+			return new Node(name,isRoot,types);
 		}
+		if(node.leaf)return node;
+		int i=0;
+		while(!inserted && i<node.tags.size()) {
+			Node aux=addRec(name, isRoot, types, node.branches.get(i));
+			node.branches.set(i, aux);
+			i++;
+		}
+		return node;
 		
 	}
 	
 	@Override
 	public String toString() {
 	    StringBuilder sb = new StringBuilder();
-	    buildString(sb, "", true,raiz);
+	    buildString(sb, "", true,root);
 	    return sb.toString();
 	}
 
 	private void buildString(StringBuilder sb, String prefix, boolean isTail, Node tree) {
-		List<Node> hijos = tree.ramas;
-	    sb.append(hijos.isEmpty() ? "|----- " : "|----- ").append(tree.nombre).append(System.lineSeparator());
+		List<Node> hijos = tree.branches;
+	    sb.append(hijos.isEmpty() ? "|----- " : "|----- ").append(tree.name).append(System.lineSeparator());
 	    prefix = prefix + ('\t');
 
 	    for (int i = 0; i < hijos.size() - 1; i++) {
