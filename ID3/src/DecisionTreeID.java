@@ -9,6 +9,8 @@ import java.util.TreeSet;
 
 import javax.naming.directory.AttributeModificationException;
 
+import dataStructure.Tree;
+
 
 public class DecisionTreeID {
 	
@@ -20,7 +22,7 @@ public class DecisionTreeID {
 	public static double entropia_general;//entropia general
 	public static Set<String> set_clasif;//cjto de datos sobre los que se clasifica.
 	public static String nombreNodoAnterior = ""; //Aqui sí es un string que guarda el nombre del nodo anterior y no un nodo en sí mismo
-	
+	public static Tree arbol;
 	
 	public DecisionTreeID() {
 		
@@ -266,8 +268,7 @@ public class DecisionTreeID {
 	}
 	//Devuelve el nombre que se tiene que dar al nodo hoja
 	private  String valorNodoHoja(Boolean[]filas, String nodoAnterior){
-		String nombreHoja=nodoAnterior;
-		
+		String nombreHoja=nodoAnterior;		
 		int f = 0;
 		/*mientras que el nombre del nodo anterior igual que la hoja anterior, ya sea vacía o no vacía se busca un nombre distinto
 		 * el motivo por el que se busca un nodo de nombre distinto al nombre del nodo anterior es por ejemplo el caso en el que en el nodo X tiene una
@@ -287,7 +288,7 @@ public class DecisionTreeID {
 			
 		return nombreHoja;
 	}
-	private String ID3 (Boolean [] filas,Boolean [] columnas,String nodo){
+	private Tree ID3 (Boolean [] filas,Boolean [] columnas,String nomnodo,Tree arbol) throws Exception{
 		/*filas-> array de bool de las filas que están "activas" en cada momento
 		 * columnas -> array de bool de las columnas "activas"
 		 * nodo -> nodo que se instancia en cada momento. En un primer lugar es el nodo raíz que se pasa como nulo
@@ -295,29 +296,27 @@ public class DecisionTreeID {
 		
 		ArrayList<String>columnaActual;
 		Boolean [] filas2 = new Boolean[numFilas];
-		Boolean [] columnas2 = new Boolean[numCol];		 
+		Boolean [] columnas2 = new Boolean[numCol];
+		List<String> lista_valores;
+		
 		//Caso base, poner un nodo hoja
-		if (nodo != null && clasificar(filas,columnas)){
-			nodo=valorNodoHoja(filas, nodo);
-			System.out.println("Nodo hoja:"+nodo);
+		
+		if (arbol != null && clasificar(filas,columnas)){
+			nomnodo=valorNodoHoja(filas, nomnodo);
+			arbol.add(nomnodo);
 		}
 		else{
 			
 			int atributo = atrMaxGanancia(filas,columnas);//se calcula el atributo de máxima ganancia.
-			
-			System.out.println("\n \n Max g->"+atributos.get(atributo));//imprimir atributo max ganancia
-			if (nodo == null){
-				nodo=atributos.get(atributo);//Contenido del if provisional, lo que se hace es crear nodo
-				System.out.println("Raiz "+nodo);//Imprimir nombre del nodo
-				
-			}
-			else {
-				nodo = atributos.get(atributo);//también provisional, se instancia el de maxima ganancia
-				System.out.println(nodo);//imprimir nombre del nodo
-			}
 			columnaActual = columnaActual(atributo,filas);
-			//System.out.println("Columna act "+columnaActual.toString());//Comprobar valores de la columna que se está utilizando
 			Set<String>valores_atributo = getSetClasif(columnaActual);//conseguir las ramas que tendrá el nodo
+						
+			if (arbol == null){
+				arbol = new Tree();//crear arbol
+			}
+			nomnodo = atributos.get(atributo);
+			lista_valores = new ArrayList(valores_atributo);
+			arbol.add(nomnodo, lista_valores);
 			
 			//Si valores_atributo > 1 significa que hay más de una rama, sino, es posible clasificar
 			if(valores_atributo.size()>1){
@@ -329,17 +328,10 @@ public class DecisionTreeID {
 				for(String v: valores_atributo){
 					columnas2 [atributo]=false;//eliminar la columna del atributo de máx ganancia puesto
 					filas2 = eliminarFilas(filas2,v,atributo);//eliminar las filas que no tienen valor v (que no pertenecen a la rama)
-										
-					String nodo2="";//crear nuevo nodo que será el hijo,que no es nulo,aun no se sabe si será hoja o no (nodo2)
-					//añadir el nodo hijo (nodo2) al nodo (nodo) en la rama de nombre "v"
-					System.out.println(atributos.get(atributo)+" -> Rama "+v);
-					nodo2 = ID3(filas2,columnas2,nodo2);
-					nombreNodoAnterior =nodo2;/*Se guarda el nombre del nodo anterior*/
-					
-					System.out.println("Vuelta atrás");
-					//System.out.println("Nodo ANTERIOR:"+nodo2);//(para comprobaciones)
-					//columnaActual = columnaActual(atributo,filas);//para comprobaciones
-					//System.out.println("Columna al hacer backtrack "+columnaActual.toString());//comprobaciones
+															
+					String nomnodo2="";
+					arbol = ID3(filas2,columnas2,nomnodo2, arbol);
+					nombreNodoAnterior =nomnodo2;/*Se guarda el nombre del nodo anterior*/
 					
 					//se recuperan los valores de filas y columnas al volver atrás
 					columnas2 = columnas;
@@ -348,12 +340,12 @@ public class DecisionTreeID {
 				}
 			}else{
 				//Si sólo hay una rama se clasifica
-				System.out.println("Clasificar directamente, nodo hoja->"+valorNodoHoja(filas,nombreNodoAnterior));
+				arbol.add(valorNodoHoja(filas,nombreNodoAnterior));
 			}
 		
 		}
 			//System.out.println("Salir");//Comprobar que sale y vuelve atrás
-			return nodo;
+			return arbol;
 	}
 
 	
@@ -397,35 +389,31 @@ public class DecisionTreeID {
 		}
 		//----------------------
 		//2.- Calculo la entropia general E(S)
-		double e_s = calculateGeneralEntropy(datos, set_clasif);
+		entropia_general = calculateGeneralEntropy(datos, set_clasif);
 		//3.- Calculo ganancias
 		ArrayList<Double> ganancias = new ArrayList<>();
 		double g = 0.0;
 		for (ArrayList<String> col : datos) {
 			if(!col.equals(datos.get(numCol-1))) {
-				g = ganancia(col, datos.get(numCol-1),  set_clasif, e_s);
+				g = ganancia(col, datos.get(numCol-1),  set_clasif, entropia_general);
 				ganancias.add(g);
 			}
 				
 		}
-		//-----------------
-		entropia_general = e_s;
-		int atributo = atrMaxGanancia(filas,columnas);
-
-		
+				
 		//----------------
 		
 		//Muestro atributos y debajo la ganacia de cada atributo.
-		System.out.println();
+		/*System.out.println();
 		System.out.println(atributos);
-		System.out.println(ganancias);
+		System.out.println(ganancias);*/
 		
-		//-----------comprobaciones
-		System.out.println(atributo+"--> "+ atributos.get(atributo));
+		
 		//----------- cuando esté lista la estructura del arbol se llama a la función ID3
-		String nodo=null;//EL Objeto nodo inicial es nulo
-		nodo= ID3(filas, columnas, nodo);
-		System.out.println("NODO RAIZ"+nodo);
+		String nombrenodo="";
+		arbol = null;//EL Objeto nodo inicial es nulo
+		arbol = ID3(filas, columnas, nombrenodo,arbol);
+		System.out.println("Arbol\n"+arbol.toString());
 		/*
 		 * De ahora en adelante toca el algoritmo ID3.
 		 * Coger de "ganancias" el valor más grande y asociarlo al atributo.
