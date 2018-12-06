@@ -1,3 +1,4 @@
+import java.awt.BorderLayout;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -8,8 +9,11 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import javax.naming.directory.AttributeModificationException;
+import javax.swing.JFrame;
+import javax.swing.JTextArea;
 
 import dataStructure.Tree;
+//import dataStructure.Tree.Node;
 
 
 public class DecisionTreeID {
@@ -317,7 +321,16 @@ public class DecisionTreeID {
 			nomnodo = atributos.get(atributo);
 			lista_valores = new ArrayList(valores_atributo);
 			arbol.add(nomnodo, lista_valores);
-			
+			//-----------
+			/*
+			System.out.println(nomnodo);
+			if(lista_valores!=null) {
+				for(String v:lista_valores) {
+					System.out.print(v);
+				}
+				System.out.println("");
+			}
+			*/
 			//Si valores_atributo > 1 significa que hay más de una rama, sino, es posible clasificar
 			if(valores_atributo.size()>1){
 				//guardar el valor de filas y columnas para la vuelta atrás
@@ -413,7 +426,8 @@ public class DecisionTreeID {
 		String nombrenodo="";
 		arbol = null;//EL Objeto nodo inicial es nulo
 		arbol = ID3(filas, columnas, nombrenodo,arbol);
-		System.out.println("Arbol\n"+arbol.toString());
+		//System.out.println("Arbol\n"+arbol.toString());
+		this.drawDecisionTree();
 		/*
 		 * De ahora en adelante toca el algoritmo ID3.
 		 * Coger de "ganancias" el valor más grande y asociarlo al atributo.
@@ -427,19 +441,38 @@ public class DecisionTreeID {
 	
 
 	public void drawDecisionTree() { //Mostrar
-		/*
-		 * dibuja el árbol. 
-		 */
+		JFrame frame= new JFrame("Salida");
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		
+		JTextArea texto=new JTextArea(arbol.toString()); 
+		texto.setEditable(false);
+		texto.setFont(texto.getFont().deriveFont(20f));
+		
+		frame.getContentPane().add(texto,BorderLayout.CENTER);
+		frame.pack();
+		frame.setVisible(true);
+		
+		//System.out.print(arbol.toString());
 	}
+	
 
 	public Object prediction (String[] registroCVS) { //Predecir
 		/*
 		 * devuelve la clase a la que pertenece el registro que queremos predecir. El registro y el fichero tienen que
 		 * tener las variables en el mismo orden. 
 		 */
-	
-
-		return registroCVS;
+		/*recibo la lista de datos en el orden de las variables
+		 * tengo la lista de variables (atributos), le puedo "asignar a cada dato su variable"
+		 * el nombre del nodo es el nombre del atributo que se está calculando o la respuesta, que es set_clasif
+		 * algoritmo: bajar en la i rama del atributo del nodo para el i valor, el i valor es la i tag del nodo (el segundo hijo del nodo es el de la segunda tag)
+		 * 	para el nodo actual, busco el numero de su atributo en atributos[], ese es el número
+		 * 	del valor para ese atributo en registro[], con el valor de registro busco el mismo
+		 * 	String en tag, la posicion del String en tag es la rama por la que tengo que tirar
+		 * 	CB/final= el Nodo pertenece a set_clasif, podria decir que si es una hoja pero no veo como esta hecho bool leaf en tree y esto sirve
+		 * la que voy a liar con tal de no poner "Nodo" publico
+		 * */
+		String res= arbol.recorrerArbol(registroCVS,atributos,set_clasif);
+		return res;
 
 	}
 
@@ -449,6 +482,7 @@ public class DecisionTreeID {
 		try {
 			DecisionTreeID dt = new DecisionTreeID();
 			dt.learnDT(filename);
+			
 			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
