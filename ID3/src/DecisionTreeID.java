@@ -334,8 +334,8 @@ public class DecisionTreeID {
 					nombreNodoAnterior =nomnodo2;/*Se guarda el nombre del nodo anterior*/
 					
 					//se recuperan los valores de filas y columnas al volver atrás
-					columnas2 = columnas;
-					filas2 = filas;
+					System.arraycopy(columnas, 0, columnas2, 0,columnas.length);
+					System.arraycopy(filas, 0, filas2, 0,filas.length);
 					
 				}
 			}else{
