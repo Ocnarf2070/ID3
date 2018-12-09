@@ -13,7 +13,6 @@ import javax.swing.JFrame;
 import javax.swing.JTextArea;
 
 import dataStructure.Tree;
-//import dataStructure.Tree.Node;
 
 
 public class DecisionTreeID {
@@ -321,16 +320,7 @@ public class DecisionTreeID {
 			nomnodo = atributos.get(atributo);
 			lista_valores = new ArrayList(valores_atributo);
 			arbol.add(nomnodo, lista_valores);
-			//-----------
-			/*
-			System.out.println(nomnodo);
-			if(lista_valores!=null) {
-				for(String v:lista_valores) {
-					System.out.print(v);
-				}
-				System.out.println("");
-			}
-			*/
+			
 			//Si valores_atributo > 1 significa que hay más de una rama, sino, es posible clasificar
 			if(valores_atributo.size()>1){
 				//guardar el valor de filas y columnas para la vuelta atrás
@@ -347,8 +337,8 @@ public class DecisionTreeID {
 					nombreNodoAnterior =nomnodo2;/*Se guarda el nombre del nodo anterior*/
 					
 					//se recuperan los valores de filas y columnas al volver atrás
-					columnas2 = columnas;
-					filas2 = filas;
+					System.arraycopy(columnas, 0, columnas2, 0,columnas.length);
+					System.arraycopy(filas, 0, filas2, 0,filas.length);
 					
 				}
 			}else{
@@ -454,7 +444,6 @@ public class DecisionTreeID {
 		
 		//System.out.print(arbol.toString());
 	}
-	
 
 	public Object prediction (String[] registroCVS) { //Predecir
 		/*
@@ -482,7 +471,6 @@ public class DecisionTreeID {
 		try {
 			DecisionTreeID dt = new DecisionTreeID();
 			dt.learnDT(filename);
-			
 			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

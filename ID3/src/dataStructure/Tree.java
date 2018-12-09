@@ -38,7 +38,6 @@ public class Tree {
 	public boolean isEmpty(){
 		return root==null;
 	}
-	
 
 	public void add(String name, List<String> types) throws Exception {
 		root = addRec(name,false, types, root);
@@ -71,26 +70,7 @@ public class Tree {
 	    buildString(sb, "", true,root,"");
 	    return sb.toString();
 	}
-	/* --El de Franco--
-	private void buildString(StringBuilder sb, String prefix, boolean isTail, Node tree) {
-		List<Node> hijos = tree.branches;
-	    sb.append(hijos.isEmpty() ? "|----- " : "|----- ").append(tree.name).append(System.lineSeparator());
-	    prefix = prefix + ('\t');
 
-	    for (int i = 0; i < hijos.size() - 1; i++) {
-	        sb.append(prefix);
-	        Node aux = hijos.get(i);
-	        buildString(sb, prefix, false,aux);
-	    }
-	    if (hijos.size() >= 1) {
-	        sb.append(prefix);
-	        buildString(sb,prefix, true,hijos.get(hijos.size() - 1));
-	    }
-	}
-	*/
-	
-	//Le voy a pasar para cada nodo la respuesta a la pregunta del nodo padre que lo corresponde (al hijo alta de tension -> opcion=alta, para el root, nada)
-	//istail no parece que sirva pero lo dejo, para simplificar y para no fastidiar con todas las llamadas al metodo
 	private void buildString(StringBuilder sb, String prefix, boolean isTail, Node tree, String opcion) {
 		List<Node> hijos = tree.branches;
 	    sb.append(hijos.isEmpty() ? "|-----" : "|-----").append(opcion + "-----").append(tree.name).append(System.lineSeparator());
