@@ -3,6 +3,7 @@ package dataStructure;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 public class Tree {
 	private static class Node {
@@ -66,24 +67,60 @@ public class Tree {
 	@Override
 	public String toString() {
 	    StringBuilder sb = new StringBuilder();
-	    buildString(sb, "", true,root);
+	    buildString(sb, "", true,root,"");
 	    return sb.toString();
 	}
 
-	private void buildString(StringBuilder sb, String prefix, boolean isTail, Node tree) {
+	private void buildString(StringBuilder sb, String prefix, boolean isTail, Node tree, String opcion) {
 		List<Node> hijos = tree.branches;
-	    sb.append(hijos.isEmpty() ? "|----- " : "|----- ").append(tree.name).append(System.lineSeparator());
+	    sb.append(hijos.isEmpty() ? "|-----" : "|-----").append(opcion + "-----").append(tree.name).append(System.lineSeparator());
 	    prefix = prefix + ('\t');
-
-	    for (int i = 0; i < hijos.size() - 1; i++) {
+	    //Las iniciales para ponerlas delante de opcion => tension alta
+	    String s=tree.name;
+	    String iniciales=""+s.charAt(0);
+	    for(int i=0;i<s.length()-1;i++) {
+			if(Character.isWhitespace(s.charAt(i))) {
+				iniciales=iniciales+(s.charAt(i+1));
+			}
+		}
+	    
+	    for (int i = 0; i < hijos.size(); i++) {
 	        sb.append(prefix);
 	        Node aux = hijos.get(i);
-	        buildString(sb, prefix, false,aux);
+	        StringBuilder et= new StringBuilder();
+	        et.append("");
+	        
+	        if(tree.tags!=null) {
+	        	et.append(iniciales + "=>" + tree.tags.get(i));
+	        }
+	        
+	        buildString(sb,prefix, false,aux,et.toString());
 	    }
-	    if (hijos.size() >= 1) {
-	        sb.append(prefix);
-	        buildString(sb,prefix, true,hijos.get(hijos.size() - 1));
-	    }
+	   
+	}
+	
+	public String recorrerArbol(String[] registro,ArrayList<String> atributos,Set<String> hojas) {
+		Node actual= root;
+		int indiceAt=0;
+		while(!hojas.contains(actual.name)) {
+			for(int i=0;i<atributos.size();i++) {
+				if(actual.name.compareTo(atributos.get(i))==0) {
+					indiceAt=i;
+					break;
+				}
+			}
+			String valorAt= registro[indiceAt];
+			
+			List<String> pValores= actual.tags;
+			
+			for(int i=0; i<pValores.size(); i++) {
+				if(pValores.get(i).compareTo(valorAt)==0) {
+					actual=actual.branches.get(i);
+					break;
+				}
+			}
+		}
+		return actual.name;
 	}
 
 }
