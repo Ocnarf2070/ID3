@@ -42,8 +42,8 @@ public class DecisionTreeID {
 			if(sc.hasNextLine()) {
 				p = sc.nextLine(); 
 				try(Scanner s = new Scanner(p).useDelimiter("[;]")){		
-					/*if(s.hasNext())
-						s.next();*/ //Primera columna despreciable ({Pacientes}, no la tengo en cuenta
+					if(s.hasNext())
+						s.next(); //Primera columna despreciable ({Pacientes}, no la tengo en cuenta
 					while(s.hasNext()) { 
 						//Leo parámetros uno a uno y lo guardo (eg. [Paciente, Presion Arterial, ...])					
 						atributos.add(s.next()); 
@@ -265,24 +265,49 @@ public class DecisionTreeID {
 	
 	//Devuelve el nombre que se tiene que dar al nodo hoja
 	private  String valorNodoHoja(Boolean[]filas, String nodoAnterior){
-		String nombreHoja=nodoAnterior;		
-		int f = 0;
-		/*mientras que el nombre del nodo anterior igual que la hoja anterior, ya sea vacía o no vacía se busca un nombre distinto
-		 * el motivo por el que se busca un nodo de nombre distinto al nombre del nodo anterior es por ejemplo el caso en el que en el nodo X tiene una
-		 * rama izda con hoja igual a "Y" y en la rama derecha de X el siguiente atributo de máxima ganancia sólo tiene una rama que directamente
-		 * se clasifica y puede hacerlo como "Y" o como otros "valores hoja" "Z","J" . 
-		 * Ejemplo Simpsons: cuando en la expansión por la rama izda se llega al nodo interno "peso", éste por la izda el siguiente nodo
-		 * es hoja (de valor "H"), al continuar por la rama derecha de "peso", el siguiente (y último atributo que queda por explorar)
-		 * es "edad", que en este caso sólo tiene una rama por la que seguir, por lo que este nodo interno "edad" no se pone
-		 * y se clasifica directamente, como la clasificación puede ser "H" o "M", escogemos "M", de otra manera si se pone "H"
-		 * habría que suprimir el nodo interno "peso" y sustituirlo por un nodo hoja.
-		 */
-			while(nodoAnterior.equals(nombreHoja)&&f<numFilas){
-				if(filas[f])nombreHoja = datos.get(numCol-1).get(f);
-				
-				f++;
+		Boolean hayNodoHoja=false;
+		String v,nombreHoja="";	
+		int numValores,valorestot,nv,indNhoja,j;
+		
+		ArrayList<String> colActual = columnaActual(numCol-1, filas);
+		Set<String> cjto_clasif = getSetClasif(colActual);
+		numValores = cjto_clasif.size();
+		List<String> vals =new ArrayList<String>(cjto_clasif);
+		Integer numVals[] = new Integer [vals.size()];
+		
+		
+		if(numValores==1)nombreHoja = vals.get(0);//si sólo hay un valor diferente
+		else{
+			//si hay mas de uno, se coge el de mayor porcentaje
+			valorestot=0;
+			for(int vi = 0;vi<numVals.length;vi++){
+				numVals[vi]=0;
 			}
-			
+			for(int i = 0; i<filas.length;i++){
+				if (filas[i]){
+					valorestot++;
+					v = datos.get(numCol-1).get(i);
+					j = 0;
+					while (j< vals.size()){
+						if(v.equals(vals.get(j)))numVals[j]++;
+						j++;
+					}
+				}
+			}			
+			nv = 0;
+			indNhoja=0;
+			double porcent, mayorPorcent = 0;
+			while(nv<numVals.length&& !hayNodoHoja){
+				porcent=(numVals[nv]/valorestot);
+				if(porcent>=mayorPorcent){
+					mayorPorcent = porcent;
+					indNhoja=nv;
+					if((porcent>0.5))hayNodoHoja = true;					
+				}
+				nv++;
+			}			
+			nombreHoja=vals.get(indNhoja);
+		}
 		return nombreHoja;
 	}
 	private Tree ID3 (Boolean [] filas,Boolean [] columnas,Tree arbol) throws Exception{		
@@ -316,7 +341,7 @@ public class DecisionTreeID {
 					filas2 = eliminarFilas(filas2,v,atributo);//eliminar las filas que no tienen valor v (que no pertenecen a la rama)
 															
 					if(clasificar(filas2,columnas2)){//Caso base, poner un nodo hoja
-						nomnodo=valorNodoHoja(filas, nombreNodoAnterior);
+						nomnodo=valorNodoHoja(filas2, nombreNodoAnterior);
 						arbol.add(nomnodo);
 						nombreNodoAnterior = nomnodo;
 					}else{
@@ -344,7 +369,7 @@ public class DecisionTreeID {
 		
 		System.out.println("Nuestra tabla de datos: ");	
 		//Primera fila despreciable, por ello, la elimino
-		//datos.remove(0);
+		datos.remove(0);
 		System.out.println(atributos);
 		for (ArrayList<String> col : datos) {
 			System.out.println(col);
@@ -426,7 +451,7 @@ public class DecisionTreeID {
 
 
 	public static void main(String[] args) throws Exception {
-		String filename = "datosTablaSimpsons.csv";
+		String filename = "datosTabla.csv";
 		try {
 			DecisionTreeID dt = new DecisionTreeID();
 			dt.learnDT(filename);
