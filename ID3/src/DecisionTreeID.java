@@ -302,7 +302,7 @@ public class DecisionTreeID {
 				if(porcent>=mayorPorcent){
 					mayorPorcent = porcent;
 					indNhoja=nv;
-					if((porcent>0.5))hayNodoHoja = true;					
+					if((porcent>0.5)||(porcent==0.5 && !nodoAnterior.equals(vals.get(indNhoja))))hayNodoHoja = true;					
 				}
 				nv++;
 			}			
@@ -451,11 +451,27 @@ public class DecisionTreeID {
 
 
 	public static void main(String[] args) throws Exception {
-		String filename = "datosTabla.csv";
+		String filename = "datosTablaSimpsons.csv";
 		try {
 			DecisionTreeID dt = new DecisionTreeID();
 			dt.learnDT(filename);
 			
+			System.out.println("Predicciones:");
+			/*
+			String[] reg= {"Alta","Alto","Alto","No","No"};
+			String rP="";
+			for(String v:reg) rP= rP+v+"-";
+			List<String> listaAt=dt.atributos;
+			String aP="";
+			for(String v:listaAt) aP= aP+v+";";
+			System.out.println(aP + '\n'+ rP + ">" + dt.prediction(reg));
+			System.out.println("");
+			
+			String[] reg2= {"Media","Bajo","Alto","Si","Si"};
+			String rP2="";
+			for(String v:reg2) rP2= rP2+v+"-";
+			System.out.println(aP+'\n'+rP2+">"+dt.prediction(reg2));
+			*/
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
